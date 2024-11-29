@@ -198,16 +198,16 @@ typedef struct
 	//FreeRTOS components
 
 	//Queue Modbus Telegram
-	osMessageQueueId_t QueueTelegramHandle;
+	osMessageQId QueueTelegramHandle;
 
 	//Task Modbus slave
-	osThreadId_t myTaskModbusAHandle;
+	osThreadId myTaskModbusAHandle;
 	//Timer RX Modbus
 	xTimerHandle xTimerT35;
 	//Timer MasterTimeout
 	xTimerHandle xTimerTimeout;
 	//Semaphore for Modbus data
-	osSemaphoreId_t ModBusSphrHandle;
+	osSemaphoreId ModBusSphrHandle;
 	// RX ring buffer for USART
 	modbusRingBuffer_t xBufferRX;
 	// type of hardware  TCP, USB CDC, USART
@@ -252,8 +252,8 @@ uint16_t getTimeOut(); //!<get communication watch-dog timer value
 bool getTimeOutState(); //!<get communication watch-dog timer state
 void ModbusQuery(modbusHandler_t * modH, modbus_t telegram ); // put a query in the queue tail
 void ModbusQueryInject(modbusHandler_t * modH, modbus_t telegram); //put a query in the queue head
-void StartTaskModbusSlave(void *argument); //slave
-void StartTaskModbusMaster(void *argument); //master
+void StartTaskModbusSlave(void const * argument); //slave
+void StartTaskModbusMaster(void const * argument); //master
 uint16_t calcCRC(uint8_t *Buffer, uint8_t u8length);
 
 #if ENABLE_TCP == 1

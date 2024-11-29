@@ -41,47 +41,43 @@ modbusHandler_t *mHandlers[MAX_M_HANDLERS];
 
 
 ///Queue Modbus telegrams for master
-const osMessageQueueAttr_t QueueTelegram_attributes = {
-       .name = "QueueModbusTelegram"
+osMessageQDef(QueueModbusTelegram, MAX_TELEGRAMS, modbus_t);
+
+
+const osThreadDef_t myTaskModbusA_attributes = {
+    .name = "TaskModbusSlave",
+    .tpriority = osPriorityNormal,
+    .stacksize = 128 * 4
 };
 
-
-const osThreadAttr_t myTaskModbusA_attributes = {
+const osThreadDef_t myTaskModbusA_attributesTCP = {
     .name = "TaskModbusSlave",
-    .priority = (osPriority_t) osPriorityNormal,
-    .stack_size = 128 * 4
-};
-
-const osThreadAttr_t myTaskModbusA_attributesTCP = {
-    .name = "TaskModbusSlave",
-    .priority = (osPriority_t) osPriorityNormal,
-    .stack_size = 256 * 6
+    .tpriority = osPriorityNormal,
+    .stacksize = 256 * 6
 };
 
 
 
 //Task Modbus Master
 //osThreadId_t myTaskModbusAHandle;
-const osThreadAttr_t myTaskModbusB_attributes = {
+const osThreadDef_t myTaskModbusB_attributes = {
     .name = "TaskModbusMaster",
-    .priority = (osPriority_t) osPriorityNormal,
-    .stack_size = 128 * 4
+    .tpriority = osPriorityNormal,
+    .stacksize = 128 * 4
 };
 
 
-const osThreadAttr_t myTaskModbusB_attributesTCP = {
+const osThreadDef_t myTaskModbusB_attributesTCP = {
     .name = "TaskModbusMaster",
-    .priority = (osPriority_t) osPriorityNormal,
-    .stack_size = 256 * 4
+    .tpriority = osPriorityNormal,
+    .stacksize = 256 * 4
 };
 
 
 
 
 //Semaphore to access the Modbus Data
-const osSemaphoreAttr_t ModBusSphr_attributes = {
-    .name = "ModBusSphr"
-};
+osSemaphoreDef(ModBusSphr);
 
 
 uint8_t numberHandlers = 0;
@@ -217,13 +213,13 @@ void ModbusInit(modbusHandler_t * modH)
 #if ENABLE_TCP == 1
 		  if( modH->xTypeHW == TCP_HW)
 		  {
-			  modH->myTaskModbusAHandle = osThreadNew(StartTaskModbusSlave, modH, &myTaskModbusA_attributesTCP);
+			  modH->myTaskModbusAHandle = osThreadCreate(&myTaskModbusA_attributesTCP, modH);
 		  }
 		  else{
-			  modH->myTaskModbusAHandle = osThreadNew(StartTaskModbusSlave, modH, &myTaskModbusA_attributes);
+			  modH->myTaskModbusAHandle = osThreadCreate(&myTaskModbusA_attributes, modH);
 		  }
 #else
-		  modH->myTaskModbusAHandle = osThreadNew(StartTaskModbusSlave, modH, &myTaskModbusA_attributes);
+		  modH->myTaskModbusAHandle = osThreadCreate(&myTaskModbusA_attributes, modH);
 #endif
 
 
@@ -235,14 +231,14 @@ void ModbusInit(modbusHandler_t * modH)
 #if ENABLE_TCP == 1
 		  if( modH->xTypeHW == TCP_HW)
 		  {
-		     modH->myTaskModbusAHandle = osThreadNew(StartTaskModbusMaster, modH, &myTaskModbusB_attributesTCP);
+		     modH->myTaskModbusAHandle = osThreadCreate(&myTaskModbusB_attributesTCP, modH);
 		  }
 		  else
 		  {
-		     modH->myTaskModbusAHandle = osThreadNew(StartTaskModbusMaster, modH, &myTaskModbusB_attributes);
+		     modH->myTaskModbusAHandle = osThreadCreate(&myTaskModbusB_attributes, modH);
 		  }
 #else
-		  modH->myTaskModbusAHandle = osThreadNew(StartTaskModbusMaster, modH, &myTaskModbusB_attributes);
+		  modH->myTaskModbusAHandle = osThreadCreate(&myTaskModbusB_attributes, modH);
 #endif
 
 
@@ -260,7 +256,7 @@ void ModbusInit(modbusHandler_t * modH)
 		  }
 
 
-		  modH->QueueTelegramHandle = osMessageQueueNew (MAX_TELEGRAMS, sizeof(modbus_t), &QueueTelegram_attributes);
+		  modH->QueueTelegramHandle = osMessageCreate(osMessageQ(QueueModbusTelegram), NULL);
 
 		  if(modH->QueueTelegramHandle == NULL)
 		  {
@@ -291,7 +287,7 @@ void ModbusInit(modbusHandler_t * modH)
 	  }
 
 
-	  modH->ModBusSphrHandle = osSemaphoreNew(1, 1, &ModBusSphr_attributes);
+	  modH->ModBusSphrHandle = osSemaphoreCreate(osSemaphore(ModBusSphr), 1);
 
 	  if(modH->ModBusSphrHandle == NULL)
 	  {
@@ -628,7 +624,7 @@ void  TCPinitserver(modbusHandler_t *modH)
 
 
 
-void StartTaskModbusSlave(void *argument)
+void StartTaskModbusSlave(void const *argument)
 {
 
   modbusHandler_t *modH =  (modbusHandler_t *)argument;
@@ -1058,7 +1054,7 @@ static mb_errot_t TCPgetRxBuffer(modbusHandler_t * modH)
 
 #endif
 
-void StartTaskModbusMaster(void *argument)
+void StartTaskModbusMaster(void const *argument)
 {
 
   modbusHandler_t *modH =  (modbusHandler_t *)argument;
